@@ -27,7 +27,6 @@ public class LoginScreen extends JFrame {
                 //after login successfully:
                 try {
                     Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
-                    new ColorDiary();
                 } catch (SQLException ex) {
                     JOptionPane.showMessageDialog(
                         this,

@@ -8,6 +8,7 @@ import java.util.TimerTask;
 import java.util.HashMap;
 import java.util.Map;
 
+
 public class ColorDiary extends JFrame {
     private JPanel calendarPanel;
     private JLabel monthLabel;
@@ -23,10 +24,22 @@ public class ColorDiary extends JFrame {
     //MySQL connection
     private void connectDatabase() {
         try {
-            conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
+            conn = DriverManager.getConnection(DB_URL, DB_USER, "tiger");
             System.out.println("✅ Connected to MySQL!");
         } catch (Exception ex) {
             ex.printStackTrace();
+        }
+    }
+
+    private static class MoodEntry {
+        Integer rating;
+        String emoji;
+        String notes;
+
+        MoodEntry(Integer rating, String emoji, String notes) {
+            this.rating = rating;
+            this.emoji = emoji;
+            this.notes = notes;
         }
     }
 
@@ -68,14 +81,12 @@ public class ColorDiary extends JFrame {
             drawCalendar();
         });
 
-        statsBtn.addActionListener(e ->
-                JOptionPane.showMessageDialog(this, "Statistics window coming soon!")
-        );
+        statsBtn.addActionListener(e -> openStatsWindow());
+
 
         setVisible(true);
     }
 
-    // possibly non-functional as of now.
     private Integer getMoodForDate(LocalDate date) {
         try (PreparedStatement stmt = conn.prepareStatement(
                 "SELECT mood_rating FROM mood_entries WHERE user_id = 1 AND entry_date = ?")) {
@@ -91,17 +102,37 @@ public class ColorDiary extends JFrame {
         return null;
     }
 
-    //keep this
     private Color getColorForMood(int mood) {
         switch (mood) {
-            case 1: case 2: return Color.RED;
-            case 3: case 4: return Color.ORANGE;
-            case 5: case 6: return Color.YELLOW;
-            case 7: case 8: return new Color(31, 198, 0); // light green
-            case 9: case 10: return new Color(0, 128, 0); // dark green
+            case 0: return Color.LIGHT_GRAY;
+            case 1: case 2: return new Color(255, 51, 51); 
+            case 3: case 4: return new Color(255, 128, 0); 
+            case 5: case 6: return new Color(255, 255, 0); 
+            case 7: case 8: return new Color(102, 255, 102); 
+            case 9: case 10: return new Color(0, 204, 0);
             default: return Color.LIGHT_GRAY;
         }
     }
+
+    private MoodEntry getEntryForDate(LocalDate date) {
+    try (PreparedStatement stmt = conn.prepareStatement(
+            "SELECT mood_rating, emoji, text_entry FROM mood_entries " +
+            "WHERE user_id = 1 AND entry_date = ?")) {
+        stmt.setDate(1, java.sql.Date.valueOf(date));
+        try (ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                return new MoodEntry(
+                    rs.getInt("mood_rating"),
+                    rs.getString("emoji"),
+                    rs.getString("text_entry")
+                );
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return null;
+}
 
     //fills in days
     private void drawCalendar() { 
@@ -122,30 +153,37 @@ public class ColorDiary extends JFrame {
     	    calendarPanel.add(new JLabel(""));
     	}
 
-    	for (int day = 1; day <= daysInMonth; day++) 
-    	{ 
-    		JButton dayBtn = new JButton(String.valueOf(day));
-    		int finalDay = day; 
-    		LocalDate thisDate = currentMonth.atDay(day);
+    	for (int day = 1; day <= daysInMonth; day++) { 
+            JButton dayBtn = new JButton(String.valueOf(day));
+            int finalDay = day; 
+            LocalDate thisDate = currentMonth.atDay(day);
 
-    		dayBtn.addActionListener(e -> openDayDialog(finalDay));
-    		
-    		if (thisDate.equals(LocalDate.now())) {
-        	    dayBtn.setBackground(Color.CYAN);   // highlight with cyan
-        	    dayBtn.setBorder(BorderFactory.createLineBorder(Color.BLUE, 2));
-        	    dayBtn.setFont(dayBtn.getFont().deriveFont(Font.BOLD));
-        	}
-    		calendarPanel.add(dayBtn); 
-    	} 
+            // mood from DB
+            MoodEntry entry = getEntryForDate(thisDate);
+            if (entry != null && entry.rating != null) {
+                dayBtn.setBackground(getColorForMood(entry.rating));
+            } else {
+            dayBtn.setBackground(Color.LIGHT_GRAY);
+        }
 
-    	monthLabel.setText(currentMonth.getMonth() + " " + currentMonth.getYear());
-    	calendarPanel.revalidate(); calendarPanel.repaint(); 
-    	}
+            // Highlight today
+            if (thisDate.equals(LocalDate.now())) {
+                dayBtn.setBorder(BorderFactory.createLineBorder(Color.BLUE, 2));
+                dayBtn.setFont(dayBtn.getFont().deriveFont(Font.BOLD));
+            }
+
+            dayBtn.addActionListener(e -> openDayDialog(finalDay));
+            calendarPanel.add(dayBtn); 
+        }
+
+        monthLabel.setText(currentMonth.getMonth() + " " + currentMonth.getYear());
+        calendarPanel.revalidate(); calendarPanel.repaint(); 
+    }
 
     //day window
     private void openDayDialog(int day) {
         JDialog dialog = new JDialog(this, "Day Entry - " + day, true);
-        dialog.setSize(400, 300);
+        dialog.setSize(600, 400);
         dialog.setLayout(new GridLayout(6, 2));
 
         JLabel ratingLabel = new JLabel("Mood Rating (1–10):");
@@ -157,6 +195,15 @@ public class ColorDiary extends JFrame {
 
         JButton saveBtn = new JButton("Save");
         JButton cancelBtn = new JButton("Cancel");
+
+        LocalDate date = currentMonth.atDay(day);
+        MoodEntry entry = getEntryForDate(date);
+
+    if (entry != null) {
+        if (entry.rating != null) ratingField.setText(String.valueOf(entry.rating));
+        if (entry.emoji != null) emojiField.setText(entry.emoji);
+        if (entry.notes != null) textArea.setText(entry.notes);
+    }
 
         dialog.add(ratingLabel);
         dialog.add(ratingField);
@@ -177,27 +224,118 @@ public class ColorDiary extends JFrame {
         dialog.setVisible(true);
     }
 
-    // day window save data
+    
     private void saveEntry(int day, String rating, String emoji, String notes) {
-        try (PreparedStatement stmt = conn.prepareStatement(
-            "INSERT INTO mood_entries (user_id, entry_date, mood_rating, emoji, text_entry) " +
-            "VALUES (?, ?, ?, ?, ?) " +
-            "ON DUPLICATE KEY UPDATE mood_rating = VALUES(mood_rating), emoji = VALUES(emoji), text_entry = VALUES(text_entry)"
-        )) {
+        try {
             LocalDate date = currentMonth.atDay(day);
+            int mood = Integer.parseInt(rating);
 
-            stmt.setInt(1, 1); // user_id
-            stmt.setDate(2, java.sql.Date.valueOf(date));
-            stmt.setInt(3, Integer.parseInt(rating));
-            stmt.setString(4, emoji);
-            stmt.setString(5, notes);
+            if (mood == 0) {
+                try (PreparedStatement stmt = conn.prepareStatement(
+                    "DELETE FROM mood_entries WHERE user_id = ? AND entry_date = ?"
+                )) {
+                    stmt.setInt(1, 1); // user_id
+                    stmt.setDate(2, java.sql.Date.valueOf(date));
+                    stmt.executeUpdate();
+                }
+                System.out.println("🟦 Entry deleted for " + date);
+            }else {
+                // Normal save
+                try (PreparedStatement stmt = conn.prepareStatement(
+                    "INSERT INTO mood_entries (user_id, entry_date, mood_rating, emoji, text_entry) " +
+                    "VALUES (?, ?, ?, ?, ?) " +
+                    "ON DUPLICATE KEY UPDATE mood_rating = VALUES(mood_rating), emoji = VALUES(emoji), text_entry = VALUES(text_entry)"
+                )) {
+                    stmt.setInt(1, 1); // user_id
+                    stmt.setDate(2, java.sql.Date.valueOf(date));
+                    stmt.setInt(3, mood);
+                    stmt.setString(4, emoji);
+                    stmt.setString(5, notes);
+                    stmt.executeUpdate();
+                }
+                System.out.println("✅ Saved entry for " + date);
+            }
 
-            stmt.executeUpdate();
-            System.out.println("✅ Saved entry for " + date);
         } catch (Exception ex) {
             ex.printStackTrace();
         }
     }
+
+    private void openStatsWindow() {
+        JDialog statsDialog = new JDialog(this, "Statistics", true);
+        statsDialog.setSize(500, 400);
+        statsDialog.setLayout(new BorderLayout());
+
+        int totalEntries = 0;
+        double avgMood = 0.0;
+        int bestMood = Integer.MIN_VALUE;
+        int worstMood = Integer.MAX_VALUE;
+
+        // Store per-day stats
+        Map<Integer, Integer> dayToMood = new HashMap<>();
+
+        try (PreparedStatement stmt = conn.prepareStatement(
+            "SELECT DAY(entry_date) as day, mood_rating FROM mood_entries WHERE user_id = 1"
+        )) {
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    int rating = rs.getInt("mood_rating");
+                    int day = rs.getInt("day");
+                    totalEntries++;
+                    avgMood += rating;
+                    bestMood = Math.max(bestMood, rating);
+                    worstMood = Math.min(worstMood, rating);
+                    dayToMood.put(day, rating); // last entry of that day
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        if (totalEntries > 0) avgMood /= totalEntries;
+        if (bestMood == Integer.MIN_VALUE) bestMood = 0;
+        if (worstMood == Integer.MAX_VALUE) worstMood = 0;
+
+        // --- Stats summary ---
+        JPanel summaryPanel = new JPanel(new GridLayout(0, 1));
+        summaryPanel.add(new JLabel("Total Entries: " + totalEntries));
+        summaryPanel.add(new JLabel("Average Mood: " + String.format("%.2f", avgMood)));
+        summaryPanel.add(new JLabel("Best Mood: " + bestMood));
+        summaryPanel.add(new JLabel("Worst Mood: " + worstMood));
+        statsDialog.add(summaryPanel, BorderLayout.NORTH);
+
+        // --- Custom chart panel (simple bar graph) ---
+        JPanel chartPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                int width = getWidth();
+                int height = getHeight();
+
+                int barWidth = Math.max(5, width / Math.max(1, dayToMood.size()));
+                int maxMood = 10; // assuming mood rating scale 1–10
+
+                int x = 10;
+                for (Map.Entry<Integer, Integer> entry : dayToMood.entrySet()) {
+                    int day = entry.getKey();
+                    int mood = entry.getValue();
+                    int barHeight = (int) ((double) mood / maxMood * (height - 50));
+                    g.setColor(new Color(100, 150, 255));
+                    g.fillRect(x, height - barHeight - 30, barWidth, barHeight);
+                    g.setColor(Color.BLACK);
+                    g.drawString(String.valueOf(day), x, height - 10);
+                    x += barWidth + 5;
+                }
+            }
+        };
+        chartPanel.setPreferredSize(new Dimension(400, 250));
+        statsDialog.add(chartPanel, BorderLayout.CENTER);
+
+        statsDialog.setLocationRelativeTo(this);
+        statsDialog.setVisible(true);
+    }
+
+
 
     public static void main(String[] args) {
     	//splash/intro screen 
@@ -220,5 +358,5 @@ public class ColorDiary extends JFrame {
     			splash.setVisible(false); 
     			splash.dispose(); 
     			SwingUtilities.invokeLater(() -> new LoginScreen()); } }, 3000); 
-    	}
     }
+}
