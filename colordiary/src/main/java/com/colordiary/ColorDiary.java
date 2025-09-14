@@ -26,6 +26,8 @@ public class ColorDiary extends JFrame {
     private static final String DB_PASS = "tiger";
 
     private Map<LocalDate, JButton> dayButtonMap = new HashMap<>();
+    private String currentPalette = "Heatmap"; 
+
 
     //MySQL connection
     private void connectDatabase() {
@@ -54,7 +56,7 @@ public class ColorDiary extends JFrame {
         connectDatabase();
 
         setTitle("Color Diary");
-        setSize(800, 600);
+        setSize(950, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
@@ -63,6 +65,24 @@ public class ColorDiary extends JFrame {
         JButton nextBtn = new JButton(">");
         monthLabel = new JLabel("", JLabel.CENTER);
         JButton statsBtn = new JButton("Statistics");
+        String[] palettes = {
+            "Heatmap",   
+            "Ocean",   
+            "Sunscape",
+            "Serenity",
+            "Mystic Fire",    
+            "Forestry",    
+            "Candy"   
+        };
+
+        JComboBox<String> paletteSelector = new JComboBox<>(palettes);
+        paletteSelector.addActionListener(e -> {
+            currentPalette = (String) paletteSelector.getSelectedItem();
+            drawCalendar(); // refresh calendar
+        });
+
+        topPanel.add(paletteSelector);
+
 
         topPanel.add(prevBtn);
         topPanel.add(monthLabel);
@@ -73,7 +93,7 @@ public class ColorDiary extends JFrame {
 
         calendarPanel = new JPanel(new GridLayout(0, 7));
         add(calendarPanel, BorderLayout.CENTER);
-
+        calendarPanel.setPreferredSize(new Dimension(1000, 750));
         currentMonth = YearMonth.now();
         drawCalendar();
 
@@ -109,14 +129,76 @@ public class ColorDiary extends JFrame {
     }
 
     private Color getColorForMood(int mood) {
-        switch (mood) {
-            case 0: return Color.LIGHT_GRAY;
-            case 1: case 2: return new Color(255, 51, 51); 
-            case 3: case 4: return new Color(255, 128, 0); 
-            case 5: case 6: return new Color(255, 255, 0); 
-            case 7: case 8: return new Color(102, 255, 102); 
-            case 9: case 10: return new Color(0, 204, 0);
-            default: return Color.LIGHT_GRAY;
+        if (mood <= 0) return Color.LIGHT_GRAY;
+        if (mood > 10) mood = 10;
+
+        switch (currentPalette) {
+            case "Heatmap": 
+                switch (mood) {
+                    case 1: case 2: return new Color(255, 51, 51);   // bright red
+                    case 3: case 4: return new Color(255, 128, 0);   // vivid orange
+                    case 5: case 6: return new Color(255, 255, 0);   // yellow
+                    case 7: case 8: return new Color(102, 255, 102); // lime green
+                    case 9: case 10: return new Color(0, 204, 0);    // deep green
+                }
+
+            case "Ocean":
+                switch (mood) {
+                    case 1: case 2: return new Color(0, 51, 102);    // 🌊 deep navy
+                    case 3: case 4: return new Color(0, 102, 204);   // 💧 blue
+                    case 5: case 6: return new Color(0, 204, 255);   // 🌐 cyan
+                    case 7: case 8: return new Color(102, 255, 204); // 🟢 aqua green
+                    case 9: case 10: return new Color(0, 204, 102);  // 🪸 teal green
+                }
+
+            case "Serenity":
+                switch (mood) {
+                    case 1: case 2: return new Color(25, 25, 112);   // 🌑 midnight blue (sad/low)
+                    case 3: case 4: return new Color(70, 130, 180);  // 🌊 steel blue (calm)
+                    case 5: case 6: return new Color(135, 206, 235); // ☁️ sky blue (neutral)
+                    case 7: case 8: return new Color(144, 238, 144); // 🌱 light green (hopeful)
+                    case 9: case 10: return new Color(0, 200, 0);    // 🌳 vibrant green (happy)
+                }
+
+            case "Sunscape":
+                switch (mood) {
+                    case 1: case 2: return new Color(178, 34, 34);   // 🔴 fire red
+                    case 3: case 4: return new Color(255, 69, 0);   // 🟠 orange red
+                    case 5: case 6: return new Color(255, 215, 0);  // 🟡 gold
+                    case 7: case 8: return new Color(255, 255, 102);// 🌞 light yellow
+                    case 9: case 10: return new Color(255, 140, 0); // 🌇 dark orange
+                }
+
+            case "Mystic Fire":
+                switch (mood) {
+                    case 1: case 2: return new Color(139, 0, 0);    // 🔴 dark red
+                    case 3: case 4: return new Color(178, 34, 34);  // 🟥 crimson
+                    case 5: case 6: return new Color(255, 69, 0);   // 🟠 flame
+                    case 7: case 8: return new Color(255, 140, 0);  // 🔶 dark orange
+                    case 9: case 10: return new Color(0, 0, 139);   // 🔵 deep blue
+                }
+
+
+            case "Forestry":
+                switch (mood) {
+                    case 1: case 2: return new Color(85, 107, 47);   // 🌲 dark olive green (dull/sad)
+                    case 3: case 4: return new Color(107, 142, 35);  // 🍃 olive drab (low)
+                    case 5: case 6: return new Color(173, 255, 47);  // 🌼 green-yellow (neutral fresh)
+                    case 7: case 8: return new Color(124, 252, 0);   // 🍏 lawn green (hopeful)
+                    case 9: case 10: return new Color(0, 200, 0);    // 🌳 vibrant green (happy/strong)
+                }
+
+            case "Candy":
+            switch (mood) {
+                case 1: case 2: return new Color(255, 20, 147);  // deep pink
+                case 3: case 4: return new Color(255, 182, 193); // light pink
+                case 5: case 6: return new Color(221, 160, 221); // plum
+                case 7: case 8: return new Color(186, 85, 211);  // orchid
+                case 9: case 10: return new Color(148, 0, 211);  // dark violet
+            }
+
+            default:
+                return Color.LIGHT_GRAY;
         }
     }
 
@@ -189,46 +271,78 @@ public class ColorDiary extends JFrame {
     //day window
     private void openDayDialog(int day) {
         JDialog dialog = new JDialog(this, "Day Entry - " + day, true);
-        dialog.setSize(600, 400);
-        dialog.setLayout(new GridLayout(6, 2));
+        dialog.pack();
+        dialog.setSize(750, 500);
+        dialog.setLayout(new BorderLayout(10, 10));
 
+        JPanel topPanel = new JPanel(new GridLayout(2, 2, 5, 5));
         JLabel ratingLabel = new JLabel("Mood Rating (1–10):");
         JTextField ratingField = new JTextField();
         JLabel emojiLabel = new JLabel("Emoji:");
         JTextField emojiField = new JTextField();
-        JLabel textLabel = new JLabel("Notes:");
-        JTextArea textArea = new JTextArea();
+        JButton emojiBtn = new JButton("😀");
 
+        emojiBtn.addActionListener(e -> {
+            JPopupMenu emojiMenu = new JPopupMenu();
+            String[] emojis = {"😀","😢","😡","😴","❤️","🔥","🌊","🌿","🌟"};
+            for (String em : emojis) {
+                JMenuItem item = new JMenuItem(em);
+                item.addActionListener(ev -> emojiField.setText(em));
+                emojiMenu.add(item);
+            }
+            emojiMenu.show(emojiBtn, 0, emojiBtn.getHeight());
+        });
+
+        //buttons together
+        JPanel emojiPanel = new JPanel(new BorderLayout());
+        emojiPanel.add(emojiField, BorderLayout.CENTER);
+        emojiPanel.add(emojiBtn, BorderLayout.EAST);
+
+        // Add to top panel
+        topPanel.add(ratingLabel);
+        topPanel.add(ratingField);
+        topPanel.add(emojiLabel);
+        topPanel.add(emojiPanel);
+
+        //notes field
+        JLabel textLabel = new JLabel("Notes:");
+        JTextArea textArea = new JTextArea(10, 40); // larger text area
+        textArea.setLineWrap(true);                 // wrap long lines
+        textArea.setWrapStyleWord(true);
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton saveBtn = new JButton("Save");
         JButton cancelBtn = new JButton("Cancel");
+        buttonPanel.add(saveBtn);
+        buttonPanel.add(cancelBtn);
+
+        dialog.add(topPanel, BorderLayout.NORTH);
+        dialog.add(textLabel, BorderLayout.WEST);
+        dialog.add(scrollPane, BorderLayout.CENTER);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
 
         LocalDate date = currentMonth.atDay(day);
         MoodEntry entry = getEntryForDate(date);
-
-    if (entry != null) {
-        if (entry.rating != null) ratingField.setText(String.valueOf(entry.rating));
-        if (entry.emoji != null) emojiField.setText(entry.emoji);
-        if (entry.notes != null) textArea.setText(entry.notes);
-    }
-
-        dialog.add(ratingLabel);
-        dialog.add(ratingField);
-        dialog.add(emojiLabel);
-        dialog.add(emojiField);
-        dialog.add(textLabel);
-        dialog.add(new JScrollPane(textArea));
-        dialog.add(saveBtn);
-        dialog.add(cancelBtn);
+        if (entry != null) {
+            if (entry.rating != null) ratingField.setText(String.valueOf(entry.rating));
+            if (entry.emoji != null) emojiField.setText(entry.emoji);
+            if (entry.notes != null) textArea.setText(entry.notes);
+        }
 
         saveBtn.addActionListener(e -> {
             saveEntry(day, ratingField.getText(), emojiField.getText(), textArea.getText());
             dialog.dispose();
-            drawCalendar(); // ✅ refresh calendar after saving
+            drawCalendar();
         });
-
         cancelBtn.addActionListener(e -> dialog.dispose());
+
+        dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
     }
+
+
 
     
     private void saveEntry(int day, String rating, String emoji, String notes) {
@@ -269,7 +383,7 @@ public class ColorDiary extends JFrame {
 
     private void openStatsWindow() {
         JDialog statsDialog = new JDialog(this, "Statistics", true);
-        statsDialog.setSize(600, 400);
+        statsDialog.setSize(800, 500);
         statsDialog.setLayout(new BorderLayout());
 
         // --- Step 1: Get stats from DB ---
@@ -325,7 +439,9 @@ public class ColorDiary extends JFrame {
         );
 
         ChartPanel chartPanel = new ChartPanel(chart);
+        chartPanel.setPreferredSize(new Dimension(700, 400));
         statsDialog.add(chartPanel, BorderLayout.CENTER);
+
 
         statsDialog.setLocationRelativeTo(this);
         statsDialog.setVisible(true);
