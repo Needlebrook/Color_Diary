@@ -5,7 +5,7 @@ import java.sql.*;
 public class LoginScreen extends JFrame {
     private JPasswordField passwordField;
     private final String APP_PASSWORD = "password";  
-    private static final String DB_URL = "jdbc:mysql://localhost:3306/color_diary";
+    private static final String DB_URL = "jdbc:sqlite:color_diary.db";
     private static final String DB_USER = "celia";
     private static final String DB_PASS = "tiger";
 
@@ -27,7 +27,8 @@ public class LoginScreen extends JFrame {
                 JOptionPane.showMessageDialog(this, "Welcome!");
                 //after login successfully:
                 try {
-                    Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
+                    Connection conn = DriverManager.getConnection(DB_URL);
+                    System.out.println("Connected to SQLite database.");
                 } catch (SQLException ex) {
                     JOptionPane.showMessageDialog(
                         this,

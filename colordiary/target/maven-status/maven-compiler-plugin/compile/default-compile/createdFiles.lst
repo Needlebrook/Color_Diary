@@ -1,5 +1,10 @@
-com\colordiary\LoginScreen.class
-com\colordiary\ColorDiary.class
-com\colordiary\ColorDiary$MoodEntry.class
+com\colordiary\MoodManager.class
+com\colordiary\DatabaseManager.class
 com\colordiary\App.class
+com\colordiary\LoginScreen.class
+com\colordiary\DayDialog.class
+com\colordiary\WeatherWindow.class
+com\colordiary\ColorDiary.class
+com\colordiary\StatsManager.class
 com\colordiary\ColorDiary$1.class
+com\colordiary\MoodEntry.class
