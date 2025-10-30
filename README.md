@@ -25,8 +25,10 @@ navigate between months and years to reflect on past emotional patterns.
 
 ## Showcase of Features
 ![palettes](https://github.com/user-attachments/assets/0408c0c7-8e5b-406f-a8d7-8c99663bd9e0)
+
 > *All the palettes available*
 <img width="600" height="399" alt="Screenshot 2025-10-17 203435" src="https://github.com/user-attachments/assets/d73893c1-2051-4d6f-ac1f-aa131e53a448" />
+
 > *Mood Entry Window*
 
 ## Authors
